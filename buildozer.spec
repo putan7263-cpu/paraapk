@@ -16,9 +16,6 @@ version = 1.0
 # Зависимости (pip пакеты)
 requirements = python3,kivy==2.2.1,kivymd==1.1.1,requests,certifi,charset-normalizer,idna,urllib3
 
-# Версия p4a до введения проверки hostpython3==python3 и до Python 3.14
-p4a.branch = 2024.01.21
-
 # Точка входа
 source.main = main.py
 
