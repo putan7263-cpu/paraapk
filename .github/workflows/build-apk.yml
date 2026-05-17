@@ -28,7 +28,14 @@ jobs:
     - name: Install buildozer
       run: pip install buildozer==1.6.0 cython==0.29.37
 
-    - name: Cache ~/.buildozer (SDK/NDK/p4a)
+    - name: Clone p4a at pre-2025 commit (before Python 3.14 requirement)
+      run: |
+        git clone https://github.com/kivy/python-for-android.git /home/runner/p4a
+        cd /home/runner/p4a
+        git checkout $(git rev-list -n 1 --before="2025-01-01" HEAD)
+        echo "p4a.source_dir = /home/runner/p4a" >> $GITHUB_WORKSPACE/buildozer.spec
+
+    - name: Cache ~/.buildozer (SDK/NDK)
       uses: actions/cache@v4
       with:
         path: ~/.buildozer
