@@ -35,6 +35,14 @@ jobs:
         git checkout $(git rev-list -n 1 --before="2025-01-01" HEAD)
         echo "p4a.source_dir = /home/runner/p4a" >> $GITHUB_WORKSPACE/buildozer.spec
 
+    - name: Accept Android SDK licenses
+      run: |
+        mkdir -p "$ANDROID_HOME/licenses"
+        printf '24333f8a63b6825ea9c5514f83c2829b004d1fee\nd56f5187479451eabf01fb78af6dfcb131a6481e\n' \
+          > "$ANDROID_HOME/licenses/android-sdk-license"
+        printf '84831b9409646a918e30573bab4c9c91346d8abd\n' \
+          > "$ANDROID_HOME/licenses/android-sdk-preview-license"
+
     - name: Cache ~/.buildozer (SDK/NDK)
       uses: actions/cache@v4
       with:
