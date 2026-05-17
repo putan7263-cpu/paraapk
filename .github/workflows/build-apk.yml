@@ -38,12 +38,13 @@ jobs:
     - name: Set up Android SDK for buildozer
       run: |
         yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+        $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;37.0.0" || true
         mkdir -p $ANDROID_HOME/tools/bin
         ln -sf $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager $ANDROID_HOME/tools/bin/sdkmanager
+        mkdir -p ~/.buildozer/android/platform
+        ln -sf $ANDROID_HOME ~/.buildozer/android/platform/android-sdk
 
     - name: Build APK
-      env:
-        ANDROIDSDK: /usr/local/lib/android/sdk
       run: buildozer android debug
 
     - name: Upload APK
