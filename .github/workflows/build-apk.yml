@@ -35,13 +35,15 @@ jobs:
         git checkout $(git rev-list -n 1 --before="2025-01-01" HEAD)
         echo "p4a.source_dir = /home/runner/p4a" >> $GITHUB_WORKSPACE/buildozer.spec
 
-    - name: Accept Android SDK licenses
+    - name: Set up Android SDK for buildozer
       run: |
         yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
-        mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
-        cp -r $ANDROID_HOME/licenses/. ~/.buildozer/android/platform/android-sdk/licenses/
+        mkdir -p $ANDROID_HOME/tools/bin
+        ln -sf $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager $ANDROID_HOME/tools/bin/sdkmanager
 
     - name: Build APK
+      env:
+        ANDROIDSDK: /usr/local/lib/android/sdk
       run: buildozer android debug
 
     - name: Upload APK
