@@ -24,6 +24,8 @@ jobs:
           git zip unzip openjdk-17-jdk \
           build-essential ccache libncurses5 \
           libffi-dev libssl-dev
+        sudo update-java-alternatives --set java-1.17.0-openjdk-amd64
+        echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> $GITHUB_ENV
 
     - name: Install buildozer
       run: pip install buildozer==1.6.0 cython==0.29.37
