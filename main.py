@@ -292,11 +292,12 @@ class PSApp(App):
             return
         with self._lock:
             self._sugg = results
+        dbg = getattr(self._api, "last_debug", "")
         def _ui(_):
             if err:
                 self._status_lbl.text = f"Ошибка: {err}"
             elif not results:
-                self._status_lbl.text = "Ничего не найдено"
+                self._status_lbl.text = f"Не найдено  ({dbg})" if dbg else "Не найдено"
             else:
                 self._status_lbl.text = f"Найдено: {len(results)}"
                 self._open_sugg_popup()

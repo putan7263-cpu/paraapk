@@ -147,11 +147,12 @@ class PSStoreAPI:
         self.session = requests.Session()
         self.session.headers.update({
             "User-Agent": (
-                "Mozilla/5.0 (Linux; Android 10; Mobile) "
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                 "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/124.0.0.0 Mobile Safari/537.36"
+                "Chrome/124.0.0.0 Safari/537.36"
             ),
-            "Accept": "application/json,text/html,*/*",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9,ru;q=0.8",
         })
 
     def search(self, query: str, limit: int = 10) -> list:
@@ -160,12 +161,15 @@ class PSStoreAPI:
         return self._html_search(query, limit)
 
     def _html_search(self, query: str, limit: int) -> list:
+        self.last_debug = ""
         try:
             url = f"{PS_STORE_BASE}/{self.region}/search/{quote(query)}"
             r = self.session.get(url, timeout=15)
+            self.last_debug = f"HTTP {r.status_code}, {len(r.text)}b"
             r.raise_for_status()
             html = r.text
-        except Exception:
+        except Exception as e:
+            self.last_debug = f"net err: {str(e)[:40]}"
             return []
 
         results  = []
