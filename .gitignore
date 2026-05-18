@@ -1,0 +1,9 @@
+.venv/
+.claude/
+__pycache__/
+*.pyc
+*.pyo
+bin/
+.buildozer/
+server.log
+*.log
