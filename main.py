@@ -15,12 +15,12 @@ from kivy.metrics import dp, sp
 from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
+from kivy.uix.modalview import ModalView
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.widget import Widget
 from kivy.utils import get_color_from_hex
 from kivymd.app import MDApp
 from kivymd.uix.button import MDFlatButton, MDRaisedButton
-from kivymd.uix.dialog import MDDialog
 from kivymd.uix.label import MDLabel
 from kivymd.uix.screen import MDScreen
 from kivymd.uix.textfield import MDTextField
@@ -136,8 +136,8 @@ class PSApp(MDApp):
         content = BoxLayout(
             orientation="vertical",
             size_hint_y=None,
-            padding=[dp(12), dp(8), dp(12), dp(16)],
-            spacing=dp(10),
+            padding=[dp(10), dp(6), dp(10), dp(8)],
+            spacing=dp(8),
         )
         content.bind(minimum_height=content.setter("height"))
         scroll.add_widget(content)
@@ -146,7 +146,8 @@ class PSApp(MDApp):
         content.add_widget(self._build_region_section())
         content.add_widget(self._build_search_section())
         content.add_widget(self._build_free_price_section())
-        content.add_widget(self._build_result_section())
+
+        root.add_widget(self._build_result_section())
 
         return screen
 
@@ -258,11 +259,12 @@ class PSApp(MDApp):
 
     def _build_search_section(self):
         card, body = self._make_card("Название игры")
+        self._search_card = card
 
         body.add_widget(MDLabel(
             text="Введите название (от 2 символов):",
             theme_text_color="Custom", text_color=TEXT_MUTED,
-            font_style="Caption", size_hint=(1, None), height=dp(20),
+            font_style="Caption", size_hint=(1, None), height=dp(18),
         ))
 
         self._search_tf = MDTextField(
@@ -275,7 +277,6 @@ class PSApp(MDApp):
         self._search_tf.bind(on_text_validate=self._on_search_submit)
         body.add_widget(self._search_tf)
 
-        # контейнер для подсказок — изначально скрыт (height=0)
         self._sugg_box = BoxLayout(
             orientation="vertical",
             size_hint=(1, None),
@@ -360,6 +361,7 @@ class PSApp(MDApp):
 
         self._sugg_box.add_widget(scroll)
         self._sugg_box.height = total
+        Clock.schedule_once(lambda dt: self._force_search_card_update(), 0)
 
         # фоновая предзагрузка скидок
         self._pf_gen += 1
@@ -380,9 +382,14 @@ class PSApp(MDApp):
         self._show_price()
         threading.Thread(target=self._refresh_details, daemon=True).start()
 
+    def _force_search_card_update(self):
+        if hasattr(self, '_search_card'):
+            self._search_card.height = self._search_card.minimum_height
+
     def _clear_sugg(self):
         self._sugg_box.clear_widgets()
         self._sugg_box.height = 0
+        Clock.schedule_once(lambda dt: self._force_search_card_update(), 0)
         with self._lock:
             self._sugg = []
 
@@ -449,116 +456,104 @@ class PSApp(MDApp):
     # ── раздел: результат ────────────────────────────────────────────────────
 
     def _build_result_section(self):
-        card, body = self._make_card("Оптовая цена")
+        outer = BoxLayout(orientation="vertical", size_hint=(1, None), height=dp(160))
+        _set_bg(outer, SURFACE)
+        sep = Widget(size_hint=(1, None), height=dp(1))
+        _set_bg(sep, BORDER)
+        outer.add_widget(sep)
+        inner = BoxLayout(
+            orientation="vertical", size_hint=(1, 1),
+            padding=[dp(12), dp(6), dp(12), dp(4)], spacing=dp(3),
+        )
+        outer.add_widget(inner)
 
-        # строка: имя + теги
-        name_row = BoxLayout(size_hint=(1, None), height=dp(36), spacing=dp(4))
+        name_row = BoxLayout(size_hint=(1, None), height=dp(24), spacing=dp(4))
         self._result_name = MDLabel(
             text="—", theme_text_color="Custom", text_color=TEXT,
-            font_style="Subtitle1", bold=True,
+            font_style="Subtitle2", bold=True,
             size_hint=(1, 1), shorten=True, shorten_from="right",
         )
         self._plat_lbl = MDLabel(
             text="", theme_text_color="Custom", text_color=ACCENT,
             font_style="Caption", halign="right",
-            size_hint=(None, 1), width=dp(90),
+            size_hint=(None, 1), width=dp(80),
         )
         self._lang_lbl = MDLabel(
             text="", theme_text_color="Custom", text_color=SUCCESS,
             font_style="Caption", halign="right",
-            size_hint=(None, 1), width=dp(90),
+            size_hint=(None, 1), width=dp(80),
         )
         name_row.add_widget(self._result_name)
         name_row.add_widget(self._plat_lbl)
         name_row.add_widget(self._lang_lbl)
-        body.add_widget(name_row)
+        inner.add_widget(name_row)
 
-        # пробная версия (скрыта)
         self._trial_lbl = MDLabel(
-            text="🎮  ДОСТУПНА ПРОБНАЯ ВЕРСИЯ",
+            text="ДОСТУПНА ПРОБНАЯ ВЕРСИЯ",
             theme_text_color="Custom", text_color=get_color_from_hex("#f0a500"),
             font_style="Caption", bold=True,
             size_hint=(1, None), height=0, opacity=0,
         )
-        body.add_widget(self._trial_lbl)
+        inner.add_widget(self._trial_lbl)
 
-        # блок цены
-        price_box = BoxLayout(
-            orientation="vertical",
-            size_hint=(1, None), height=dp(130),
-            padding=[dp(8), dp(8)], spacing=dp(2),
-        )
-        _set_bg(price_box, SURFACE_2)
-
-        price_box.add_widget(MDLabel(
-            text="ОПТОВАЯ ЦЕНА",
-            theme_text_color="Custom", text_color=TEXT_MUTED,
-            font_style="Overline", halign="center",
-            size_hint=(1, None), height=dp(20),
-        ))
-
-        # строка обычной цены
-        reg_row = BoxLayout(size_hint=(1, None), height=dp(50), spacing=dp(4))
+        reg_row = BoxLayout(size_hint=(1, None), height=dp(46), spacing=dp(4))
         self._price_prefix = MDLabel(
             text="", theme_text_color="Custom", text_color=TEXT_MUTED,
-            font_style="Caption", size_hint=(None, 1), width=dp(70),
+            font_style="Caption", size_hint=(None, 1), width=dp(60),
             valign="bottom", halign="right",
         )
         self._price_lbl = MDLabel(
             text="—", theme_text_color="Custom", text_color=SUCCESS,
-            font_size=sp(30), bold=True, halign="center", size_hint=(1, 1),
+            font_size=sp(28), bold=True, halign="center", size_hint=(1, 1),
         )
         self._disc_badge = MDLabel(
             text="", theme_text_color="Custom", text_color=DANGER,
-            font_style="Caption", size_hint=(None, 1), width=dp(90),
+            font_style="Caption", size_hint=(None, 1), width=dp(80),
             valign="bottom",
         )
         reg_row.add_widget(self._price_prefix)
         reg_row.add_widget(self._price_lbl)
         reg_row.add_widget(self._disc_badge)
-        price_box.add_widget(reg_row)
+        inner.add_widget(reg_row)
 
         self._old_price_lbl = MDLabel(
             text="", markup=True,
             theme_text_color="Custom", text_color=TEXT_MUTED,
             font_style="Caption", halign="center",
-            size_hint=(1, None), height=dp(18),
+            size_hint=(1, None), height=dp(16),
         )
-        price_box.add_widget(self._old_price_lbl)
+        inner.add_widget(self._old_price_lbl)
 
-        # строка PS+ цены
-        ps_row = BoxLayout(size_hint=(1, None), height=dp(42), spacing=dp(4))
+        ps_row = BoxLayout(size_hint=(1, None), height=dp(26), spacing=dp(4))
         self._ps_prefix = MDLabel(
             text="", theme_text_color="Custom", text_color=TEXT_DIM,
             font_style="Caption", bold=True,
-            size_hint=(None, 1), width=dp(40),
+            size_hint=(None, 1), width=dp(36),
         )
         self._ps_price_lbl = MDLabel(
             text="", theme_text_color="Custom", text_color=PS_PLUS_CLR,
-            font_size=sp(24), bold=True, halign="center", size_hint=(1, 1),
+            font_size=sp(20), bold=True, halign="center", size_hint=(1, 1),
         )
         self._ps_badge = MDLabel(
             text="", theme_text_color="Custom", text_color=PS_PLUS_CLR,
-            font_style="Caption", size_hint=(None, 1), width=dp(90),
+            font_style="Caption", size_hint=(None, 1), width=dp(80),
             valign="bottom",
         )
         ps_row.add_widget(self._ps_prefix)
         ps_row.add_widget(self._ps_price_lbl)
         ps_row.add_widget(self._ps_badge)
-        price_box.add_widget(ps_row)
-        body.add_widget(price_box)
+        inner.add_widget(ps_row)
 
-        # кнопка «открыть в браузере»
         open_btn = MDFlatButton(
             text="Открыть в браузере",
             theme_text_color="Custom", text_color=ACCENT,
-            size_hint=(1, None), height=dp(42),
-            font_size=sp(13),
+            size_hint=(1, None), height=dp(32),
+            font_size=sp(12),
         )
         open_btn.bind(on_release=lambda *_: self._open_browser())
-        body.add_widget(open_btn)
+        inner.add_widget(open_btn)
 
-        return card
+        return outer
 
     # ── логика цен ───────────────────────────────────────────────────────────
 
@@ -721,25 +716,44 @@ class PSApp(MDApp):
                                 font_size=sp(12))
                 )
 
-        content = self._build_params_content()
+        modal = ModalView(size_hint=(1, 1), background_color=[0, 0, 0, 0.9])
+        self._params_dlg = modal
 
-        self._params_dlg = MDDialog(
-            title="Коэффициенты расчёта",
-            type="custom",
-            content_cls=content,
-            buttons=[
-                MDFlatButton(
-                    text="Закрыть",
-                    theme_text_color="Custom", text_color=TEXT_DIM,
-                    on_release=lambda *_: self._params_dlg.dismiss(),
-                ),
-                MDRaisedButton(
-                    text="Сохранить",
-                    on_release=lambda *_: self._params_save(),
-                ),
-            ],
+        wrap = BoxLayout(
+            orientation="vertical",
+            size_hint=(0.97, 0.92),
+            pos_hint={"center_x": 0.5, "center_y": 0.5},
+            padding=[dp(10), dp(10)],
+            spacing=dp(6),
         )
-        self._params_dlg.open()
+        _set_bg(wrap, SURFACE)
+        modal.add_widget(wrap)
+
+        wrap.add_widget(MDLabel(
+            text="Коэффициенты расчёта",
+            theme_text_color="Custom", text_color=TEXT,
+            font_style="H6", bold=True,
+            size_hint=(1, None), height=dp(36),
+        ))
+
+        content = self._build_params_content()
+        wrap.add_widget(content)
+
+        btn_row = BoxLayout(size_hint=(1, None), height=dp(48), spacing=dp(8))
+        btn_row.add_widget(MDFlatButton(
+            text="Закрыть",
+            theme_text_color="Custom", text_color=TEXT_DIM,
+            size_hint=(1, 1),
+            on_release=lambda *_: modal.dismiss(),
+        ))
+        btn_row.add_widget(MDRaisedButton(
+            text="Сохранить",
+            size_hint=(1, 1),
+            on_release=lambda *_: self._params_save(),
+        ))
+        wrap.add_widget(btn_row)
+
+        modal.open()
 
     def _build_params_content(self):
         content = BoxLayout(
