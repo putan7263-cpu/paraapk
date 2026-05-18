@@ -5,10 +5,21 @@
 """
 
 import json
+import os
 import re
 from urllib.parse import quote
 
 import requests
+
+# На Android p4a/requests могут не найти CA-bundle — указываем certifi явно.
+try:
+    import certifi
+    _ca = certifi.where()
+    if _ca and os.path.exists(_ca):
+        os.environ.setdefault("SSL_CERT_FILE", _ca)
+        os.environ.setdefault("REQUESTS_CA_BUNDLE", _ca)
+except Exception:
+    pass
 
 # ──────────────────────────────────────────── константы ──────────────────────
 

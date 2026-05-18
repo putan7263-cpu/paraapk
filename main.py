@@ -6,7 +6,6 @@ PlayStation Store - Поисковик цен (Android / iOS).
 
 import os
 import threading
-import webbrowser
 
 from kivy.app import App
 from kivy.clock import Clock
@@ -235,6 +234,15 @@ class PSApp(App):
         self._search_tf.bind(text=self._on_search_text)
         self._search_tf.bind(on_text_validate=self._on_search_submit)
         wrap.add_widget(self._search_tf)
+
+        self._status_lbl = Label(
+            text="",
+            color=TEXT_MUTED, font_size=sp(11),
+            size_hint=(1, None), height=dp(16),
+            halign="left",
+        )
+        wrap.add_widget(self._status_lbl)
+        wrap.height = dp(102)
         return wrap
 
     def _on_search_text(self, instance, value):
@@ -248,9 +256,11 @@ class PSApp(App):
             Clock.schedule_once(lambda dt: self._open_params(), 0.1)
             return
         if len(query) < 2:
+            self._status_lbl.text = ""
             return
         if self._search_ev:
             self._search_ev.cancel()
+        self._status_lbl.text = "Поиск..."
         self._search_ev = Clock.schedule_once(
             lambda dt: threading.Thread(
                 target=self._fetch_sugg, args=(query,), daemon=True
@@ -272,22 +282,31 @@ class PSApp(App):
             ).start()
 
     def _fetch_sugg(self, query):
+        err = None
+        results = []
         try:
             results = self._api.search(query, limit=12)
-        except Exception:
-            results = []
+        except Exception as e:
+            err = str(e)[:60]
         if self._search_tf.text.strip() != query:
             return
         with self._lock:
             self._sugg = results
-        Clock.schedule_once(lambda dt: self._open_sugg_popup(), 0)
+        def _ui(_):
+            if err:
+                self._status_lbl.text = f"Ошибка: {err}"
+            elif not results:
+                self._status_lbl.text = "Ничего не найдено"
+            else:
+                self._status_lbl.text = f"Найдено: {len(results)}"
+                self._open_sugg_popup()
+        Clock.schedule_once(_ui, 0)
 
     def _open_sugg_popup(self):
         with self._lock:
             items = list(self._sugg)
         if not items:
             return
-
         # Закрыть предыдущий попап, если открыт
         if self._sugg_popup is not None:
             try:
@@ -539,15 +558,6 @@ class PSApp(App):
         ps_row.add_widget(self._ps_badge)
         inner.add_widget(ps_row)
 
-        open_btn = Button(
-            text="Открыть в браузере",
-            size_hint=(1, None), height=dp(34),
-            background_normal="", background_color=ACCENT_DIM,
-            color=ACCENT, font_size=sp(12), bold=True,
-        )
-        open_btn.bind(on_release=lambda *_: self._open_browser())
-        inner.add_widget(open_btn)
-
         return outer
 
     # ── расчёт ───────────────────────────────────────────────────────────────
@@ -673,13 +683,6 @@ class PSApp(App):
     def _clear_results(self):
         self._selected = None
         self._reset_display()
-
-    def _open_browser(self):
-        if self._selected and self._selected.get("url"):
-            try:
-                webbrowser.open(self._selected["url"])
-            except Exception:
-                pass
 
     # ── диалог параметров ────────────────────────────────────────────────────
 
@@ -808,8 +811,15 @@ class PSApp(App):
                 text=str(int(bkt[1])), color=TEXT_DIM, font_size=sp(11),
                 size_hint=(None, 1), width=dp(50),
             ))
-            row.add_widget(self._dlg_coeff[code][i])
-            row.add_widget(self._dlg_add[code][i])
+            # Снимаем старого родителя — TextInput'ы переиспользуются между регионами
+            cf = self._dlg_coeff[code][i]
+            af = self._dlg_add[code][i]
+            if cf.parent:
+                cf.parent.remove_widget(cf)
+            if af.parent:
+                af.parent.remove_widget(af)
+            row.add_widget(cf)
+            row.add_widget(af)
             self._dlg_col.add_widget(row)
 
     def _params_save(self, popup):

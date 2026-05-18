@@ -1,0 +1,7 @@
+# Десктопная версия (ps_price_checker.py — Windows/macOS/Linux)
+requests>=2.31
+
+# Мобильная версия (main.py — Android / iOS)
+# Устанавливать в отдельном окружении или через buildozer
+# kivy==2.2.1
+# kivymd==1.1.1
