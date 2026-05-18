@@ -89,6 +89,9 @@ class PSApp(MDApp):
     def on_start(self):
         self._settings_file = os.path.join(self.user_data_dir, "settings.json")
         cfg = load_settings(self._settings_file)
+        if not cfg:
+            bundled = os.path.join(self.directory, "settings.json")
+            cfg = load_settings(bundled)
         regions_cfg = cfg.get("regions", {})
         for code, *_ in REGIONS:
             r = regions_cfg.get(code, {})
@@ -153,8 +156,8 @@ class PSApp(MDApp):
         hdr = BoxLayout(
             orientation="vertical",
             size_hint=(1, None),
-            height=dp(64),
-            padding=[dp(16), dp(6), dp(16), dp(4)],
+            height=dp(52),
+            padding=[dp(12), dp(4), dp(12), dp(4)],
         )
         _set_bg(hdr, SURFACE)
 
@@ -162,30 +165,29 @@ class PSApp(MDApp):
             text="PlayStation Store by Slava",
             theme_text_color="Custom", text_color=TEXT,
             font_style="H6", bold=True,
-            size_hint=(1, None), height=dp(36),
+            size_hint=(1, None), height=dp(28),
         ))
         hdr.add_widget(MDLabel(
             text="Поиск игр · расчёт цены в рублях",
             theme_text_color="Custom", text_color=TEXT_DIM,
             font_style="Caption",
-            size_hint=(1, None), height=dp(22),
+            size_hint=(1, None), height=dp(18),
         ))
         return hdr
 
     # ── карточка-обёртка ─────────────────────────────────────────────────────
 
     def _make_card(self, title, icon=""):
-        """Возвращает (card, body) — card добавляется в контент, body наполняется."""
         card = BoxLayout(
             orientation="vertical",
             size_hint=(1, None),
-            padding=[dp(14), dp(10), dp(14), dp(14)],
-            spacing=dp(8),
+            padding=[dp(12), dp(8), dp(12), dp(10)],
+            spacing=dp(6),
         )
         card.bind(minimum_height=card.setter("height"))
         _set_bg(card, SURFACE)
 
-        title_row = BoxLayout(size_hint=(1, None), height=dp(30), spacing=dp(8))
+        title_row = BoxLayout(size_hint=(1, None), height=dp(26), spacing=dp(6))
         if icon:
             title_row.add_widget(MDLabel(
                 text=icon, theme_text_color="Custom", text_color=ACCENT,
@@ -210,9 +212,9 @@ class PSApp(MDApp):
     # ── раздел: регион ───────────────────────────────────────────────────────
 
     def _build_region_section(self):
-        card, body = self._make_card("Регион магазина", "🌍")
+        card, body = self._make_card("Регион магазина")
 
-        btn_row = BoxLayout(size_hint=(1, None), height=dp(46), spacing=dp(8))
+        btn_row = BoxLayout(size_hint=(1, None), height=dp(40), spacing=dp(6))
         self._region_btns = {}
         for code, label, *_ in REGIONS:
             btn = MDFlatButton(
@@ -255,7 +257,7 @@ class PSApp(MDApp):
     # ── раздел: поиск ────────────────────────────────────────────────────────
 
     def _build_search_section(self):
-        card, body = self._make_card("Название игры", "🎮")
+        card, body = self._make_card("Название игры")
 
         body.add_widget(MDLabel(
             text="Введите название (от 2 символов):",
@@ -267,7 +269,7 @@ class PSApp(MDApp):
             hint_text="Название игры...",
             mode="rectangle",
             size_hint=(1, None),
-            height=dp(52),
+            height=dp(44),
         )
         self._search_tf.bind(text=self._on_search_text)
         self._search_tf.bind(on_text_validate=self._on_search_submit)
@@ -407,7 +409,7 @@ class PSApp(MDApp):
     # ── раздел: ручная цена ──────────────────────────────────────────────────
 
     def _build_free_price_section(self):
-        card, body = self._make_card("Ручная цена", "✏️")
+        card, body = self._make_card("Ручная цена")
 
         self._free_sym_lbl = MDLabel(
             text=f"Цена в {self._current_sym()} (вместо поиска):",
@@ -420,7 +422,7 @@ class PSApp(MDApp):
             hint_text="Введите цену вручную...",
             mode="rectangle",
             size_hint=(1, None),
-            height=dp(52),
+            height=dp(44),
         )
         self._free_tf.bind(text=self._on_free_price_text)
         body.add_widget(self._free_tf)
@@ -447,7 +449,7 @@ class PSApp(MDApp):
     # ── раздел: результат ────────────────────────────────────────────────────
 
     def _build_result_section(self):
-        card, body = self._make_card("Оптовая цена", "💰")
+        card, body = self._make_card("Оптовая цена")
 
         # строка: имя + теги
         name_row = BoxLayout(size_hint=(1, None), height=dp(36), spacing=dp(4))
@@ -483,8 +485,8 @@ class PSApp(MDApp):
         # блок цены
         price_box = BoxLayout(
             orientation="vertical",
-            size_hint=(1, None), height=dp(148),
-            padding=[dp(8), dp(10)], spacing=dp(2),
+            size_hint=(1, None), height=dp(130),
+            padding=[dp(8), dp(8)], spacing=dp(2),
         )
         _set_bg(price_box, SURFACE_2)
 
