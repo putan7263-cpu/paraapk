@@ -238,11 +238,12 @@ class PSApp(App):
         self._status_lbl = Label(
             text="",
             color=TEXT_MUTED, font_size=sp(11),
-            size_hint=(1, None), height=dp(16),
-            halign="left",
+            size_hint=(1, None), height=dp(48),
+            halign="left", valign="top",
         )
+        self._status_lbl.bind(size=lambda l, _: setattr(l, "text_size", (l.width, l.height)))
         wrap.add_widget(self._status_lbl)
-        wrap.height = dp(102)
+        wrap.height = dp(134)
         return wrap
 
     def _on_search_text(self, instance, value):

@@ -10,6 +10,7 @@ import re
 from urllib.parse import quote
 
 import requests
+import urllib3
 
 # На Android p4a/requests могут не найти CA-bundle — указываем certifi явно.
 try:
@@ -18,6 +19,12 @@ try:
     if _ca and os.path.exists(_ca):
         os.environ.setdefault("SSL_CERT_FILE", _ca)
         os.environ.setdefault("REQUESTS_CA_BUNDLE", _ca)
+except Exception:
+    pass
+
+# verify=False генерит InsecureRequestWarning — глушим, чтобы не засорять лог.
+try:
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 except Exception:
     pass
 
@@ -164,12 +171,12 @@ class PSStoreAPI:
         self.last_debug = ""
         try:
             url = f"{PS_STORE_BASE}/{self.region}/search/{quote(query)}"
-            r = self.session.get(url, timeout=15)
+            r = self.session.get(url, timeout=15, verify=False)
             self.last_debug = f"HTTP {r.status_code}, {len(r.text)}b"
             r.raise_for_status()
             html = r.text
         except Exception as e:
-            self.last_debug = f"net err: {str(e)[:40]}"
+            self.last_debug = f"{type(e).__name__}: {str(e)[:100]}"
             return []
 
         results  = []
