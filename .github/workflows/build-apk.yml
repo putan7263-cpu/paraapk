@@ -33,7 +33,7 @@ jobs:
         git clone https://github.com/kivy/python-for-android.git /home/runner/p4a
         cd /home/runner/p4a
         git checkout $(git rev-list -n 1 --before="2025-01-01" HEAD)
-        echo "p4a.source_dir = /home/runner/p4a" >> $GITHUB_WORKSPACE/buildozer.spec
+        sed -i '/^\[app\]$/a p4a.source_dir = /home/runner/p4a' $GITHUB_WORKSPACE/buildozer.spec
 
     - name: Set up Android SDK for buildozer
       run: |
