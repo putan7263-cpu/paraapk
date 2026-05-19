@@ -124,12 +124,12 @@ class _Resp:
 
 def _try_import_jnius():
     try:
-        from jnius import autoclass
-        return autoclass
+        from jnius import autoclass, cast
+        return autoclass, cast
     except Exception:
-        return None
+        return None, None
 
-_AUTOCLASS = _try_import_jnius()
+_AUTOCLASS, _JCAST = _try_import_jnius()
 
 
 class _Session:
@@ -178,7 +178,7 @@ class _Session:
         URL = _AUTOCLASS("java.net.URL")
         Scanner = _AUTOCLASS("java.util.Scanner")
         u = URL(url)
-        conn = u.openConnection()
+        conn = _JCAST("java.net.HttpURLConnection", u.openConnection())
         for k, v in self.headers.items():
             try:
                 conn.setRequestProperty(k, v)
