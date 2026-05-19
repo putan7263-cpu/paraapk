@@ -14,7 +14,7 @@ source.exclude_dirs = .venv, __pycache__, .git
 version = 1.0
 
 # Зависимости (pip пакеты)
-requirements = python3,kivy==2.2.1,requests,certifi,charset-normalizer,idna,urllib3
+requirements = python3,kivy==2.2.1,openssl
 
 # Точка входа
 source.main = main.py

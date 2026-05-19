@@ -5,28 +5,50 @@
 """
 
 import json
-import os
 import re
+import ssl
+import urllib.error
+import urllib.request
 from urllib.parse import quote
 
-import requests
-import urllib3
 
-# На Android p4a/requests могут не найти CA-bundle — указываем certifi явно.
-try:
-    import certifi
-    _ca = certifi.where()
-    if _ca and os.path.exists(_ca):
-        os.environ.setdefault("SSL_CERT_FILE", _ca)
-        os.environ.setdefault("REQUESTS_CA_BUNDLE", _ca)
-except Exception:
-    pass
+# ── мини-обёртка над urllib (вместо requests; работает на Android без certifi) ─
 
-# verify=False генерит InsecureRequestWarning — глушим, чтобы не засорять лог.
-try:
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-except Exception:
-    pass
+class _Resp:
+    def __init__(self, status, text):
+        self.status_code = status
+        self.text = text
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            raise urllib.error.HTTPError("", self.status_code, "HTTP error", {}, None)
+
+
+class _Session:
+    def __init__(self):
+        self.headers = {}
+        self._ctx_strict = ssl.create_default_context()
+        self._ctx_loose = ssl.create_default_context()
+        try:
+            self._ctx_loose.check_hostname = False
+            self._ctx_loose.verify_mode = ssl.CERT_NONE
+        except Exception:
+            pass
+
+    def get(self, url, timeout=15, verify=True):
+        ctx = self._ctx_strict if verify else self._ctx_loose
+        req = urllib.request.Request(url, headers=self.headers)
+        try:
+            with urllib.request.urlopen(req, timeout=timeout, context=ctx) as r:
+                raw = r.read()
+                status = getattr(r, "status", 200)
+        except urllib.error.HTTPError as e:
+            try:
+                raw = e.read() or b""
+            except Exception:
+                raw = b""
+            status = e.code
+        text = raw.decode("utf-8", errors="replace") if raw else ""
+        return _Resp(status, text)
 
 # ──────────────────────────────────────────── константы ──────────────────────
 
@@ -151,7 +173,7 @@ def _item_has_discount(item: dict) -> bool:
 class PSStoreAPI:
     def __init__(self, region: str):
         self.region = region
-        self.session = requests.Session()
+        self.session = _Session()
         self.session.headers.update({
             "User-Agent": (
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
