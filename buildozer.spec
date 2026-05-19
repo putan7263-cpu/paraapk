@@ -25,21 +25,10 @@ orientation = portrait
 # Полноэкранный режим (False = оставить статус-бар Android)
 fullscreen = 0
 
-# Иконка и загрузочный экран (раскомментировать когда будут файлы)
-# icon.filename = %(source.dir)s/icon.png
-# presplash.filename = %(source.dir)s/presplash.png
-
 # Цвет загрузочного экрана (пока без картинки)
 android.presplash_color = #0F1020
 
-
-# ──────────────────────── Android ────────────────────────────────────────────
-
-[buildozer]
-log_level = 2
-warn_on_root = 1
-
-[app:android]
+# ──────────── Android-настройки (читаются buildozer из секции [app]) ─────────
 
 # Android API
 android.minapi = 26
@@ -49,14 +38,13 @@ android.ndk    = 25b
 # Архитектуры: arm64 — современные телефоны, armeabi-v7a — старые
 android.archs = arm64-v8a, armeabi-v7a
 
-# Разрешения
-android.permissions = INTERNET, ACCESS_NETWORK_STATE
+# Разрешения — ДОЛЖНЫ быть в [app], иначе buildozer их игнорирует
+android.permissions = android.permission.INTERNET, android.permission.ACCESS_NETWORK_STATE
 
-# gradle extras (если нужно)
-# android.gradle_dependencies =
-
-# Использовать gradle wrapper из p4a (рекомендуется)
+# Принять лицензии Android SDK автоматом
 android.accept_sdk_license = True
 
-# Java версия (Buildozer сам определит, но лучше явно)
-# android.java_version = 11
+
+[buildozer]
+log_level = 2
+warn_on_root = 1
