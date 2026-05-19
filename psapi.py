@@ -147,9 +147,15 @@ class _Session:
         # На Android идём через Java HttpURLConnection — у него и DNS, и TLS, и сокеты работают.
         if _AUTOCLASS is not None:
             try:
-                return self._get_java(url, timeout)
-            except Exception:
-                pass
+                r = self._get_java(url, timeout)
+                self.last_transport = "java"
+                self.last_java_err = ""
+                return r
+            except Exception as e:
+                self.last_java_err = "{}: {}".format(type(e).__name__, str(e)[:80])
+        else:
+            self.last_java_err = "no jnius"
+        self.last_transport = "urllib"
         return self._get_urllib(url, timeout, verify)
 
     def _get_urllib(self, url, timeout, verify):
@@ -347,11 +353,19 @@ class PSStoreAPI:
         try:
             url = f"{PS_STORE_BASE}/{self.region}/search/{quote(query)}"
             r = self.session.get(url, timeout=15, verify=False)
-            self.last_debug = f"HTTP {r.status_code}, {len(r.text)}b"
+            transport = getattr(self.session, "last_transport", "?")
+            jerr = getattr(self.session, "last_java_err", "")
+            self.last_debug = f"[{transport}] HTTP {r.status_code}, {len(r.text)}b"
+            if jerr:
+                self.last_debug += f" / java: {jerr}"
             r.raise_for_status()
             html = r.text
         except Exception as e:
-            self.last_debug = f"{type(e).__name__}: {str(e)[:100]}"
+            transport = getattr(self.session, "last_transport", "?")
+            jerr = getattr(self.session, "last_java_err", "")
+            self.last_debug = f"[{transport}] {type(e).__name__}: {str(e)[:80]}"
+            if jerr:
+                self.last_debug += f" / java: {jerr}"
             return []
 
         results  = []
