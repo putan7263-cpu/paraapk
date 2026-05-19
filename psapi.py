@@ -122,6 +122,16 @@ class _Resp:
             raise urllib.error.HTTPError("", self.status_code, "HTTP error", {}, None)
 
 
+def _try_import_jnius():
+    try:
+        from jnius import autoclass
+        return autoclass
+    except Exception:
+        return None
+
+_AUTOCLASS = _try_import_jnius()
+
+
 class _Session:
     def __init__(self):
         self.headers = {}
@@ -134,6 +144,15 @@ class _Session:
             pass
 
     def get(self, url, timeout=15, verify=True):
+        # На Android идём через Java HttpURLConnection — у него и DNS, и TLS, и сокеты работают.
+        if _AUTOCLASS is not None:
+            try:
+                return self._get_java(url, timeout)
+            except Exception:
+                pass
+        return self._get_urllib(url, timeout, verify)
+
+    def _get_urllib(self, url, timeout, verify):
         ctx = self._ctx_strict if verify else self._ctx_loose
         req = urllib.request.Request(url, headers=self.headers)
         try:
@@ -147,6 +166,41 @@ class _Session:
                 raw = b""
             status = e.code
         text = raw.decode("utf-8", errors="replace") if raw else ""
+        return _Resp(status, text)
+
+    def _get_java(self, url, timeout):
+        URL = _AUTOCLASS("java.net.URL")
+        Scanner = _AUTOCLASS("java.util.Scanner")
+        u = URL(url)
+        conn = u.openConnection()
+        for k, v in self.headers.items():
+            try:
+                conn.setRequestProperty(k, v)
+            except Exception:
+                pass
+        ms = int(timeout * 1000)
+        conn.setConnectTimeout(ms)
+        conn.setReadTimeout(ms)
+        conn.setInstanceFollowRedirects(True)
+        conn.connect()
+        status = conn.getResponseCode()
+        try:
+            stream = conn.getInputStream() if 200 <= status < 400 else conn.getErrorStream()
+        except Exception:
+            stream = conn.getErrorStream()
+        text = ""
+        if stream is not None:
+            sc = Scanner(stream)
+            try:
+                sc.useDelimiter("\\A")
+                if sc.hasNext():
+                    text = sc.next()
+            finally:
+                sc.close()
+        try:
+            conn.disconnect()
+        except Exception:
+            pass
         return _Resp(status, text)
 
 # ──────────────────────────────────────────── константы ──────────────────────
