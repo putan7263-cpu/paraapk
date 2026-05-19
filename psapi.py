@@ -6,10 +6,109 @@
 
 import json
 import re
+import socket
 import ssl
+import struct
 import urllib.error
 import urllib.request
+from random import randint
 from urllib.parse import quote
+
+
+# ── DNS fallback ─────────────────────────────────────────────────────────────
+# Python на Android (p4a) часто не видит DNS-сервера системы (нет /etc/resolv.conf),
+# и getaddrinfo падает с "No address associated with hostname". Подменяем резолвер
+# на ручной UDP-запрос к публичным DNS, если стандартный не сработал.
+
+_DNS_SERVERS = ("8.8.8.8", "1.1.1.1", "9.9.9.9")
+_DNS_CACHE: dict = {}
+
+
+def _dns_query_a(hostname: str, server: str, timeout: float = 4.0) -> str:
+    tid = randint(0, 0xFFFF)
+    header = struct.pack(">HHHHHH", tid, 0x0100, 1, 0, 0, 0)
+    qname = b""
+    for part in hostname.split("."):
+        if not part:
+            continue
+        b = part.encode("ascii")
+        qname += bytes([len(b)]) + b
+    qname += b"\x00"
+    query = header + qname + struct.pack(">HH", 1, 1)
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.settimeout(timeout)
+    try:
+        sock.sendto(query, (server, 53))
+        data, _ = sock.recvfrom(1024)
+    finally:
+        sock.close()
+
+    if len(data) < 12:
+        raise OSError("DNS response too short")
+    n_answers = struct.unpack(">H", data[6:8])[0]
+    if n_answers == 0:
+        raise OSError("DNS no answers")
+
+    pos = 12
+    while pos < len(data) and data[pos] != 0:
+        if data[pos] & 0xC0:
+            pos += 2
+            break
+        pos += data[pos] + 1
+    else:
+        pos += 1
+    pos += 4
+
+    for _ in range(n_answers):
+        if pos >= len(data):
+            break
+        if data[pos] & 0xC0:
+            pos += 2
+        else:
+            while pos < len(data) and data[pos] != 0:
+                pos += data[pos] + 1
+            pos += 1
+        if pos + 10 > len(data):
+            break
+        atype, _aclass, _ttl, rdlen = struct.unpack(">HHIH", data[pos:pos + 10])
+        pos += 10
+        if atype == 1 and rdlen == 4 and pos + 4 <= len(data):
+            return "{}.{}.{}.{}".format(*data[pos:pos + 4])
+        pos += rdlen
+    raise OSError("No A record")
+
+
+def _resolve(hostname: str) -> str:
+    if hostname in _DNS_CACHE:
+        return _DNS_CACHE[hostname]
+    last_err = None
+    for srv in _DNS_SERVERS:
+        try:
+            ip = _dns_query_a(hostname, srv)
+            _DNS_CACHE[hostname] = ip
+            return ip
+        except Exception as e:
+            last_err = e
+    raise (last_err or OSError("DNS resolve failed"))
+
+
+_orig_getaddrinfo = socket.getaddrinfo
+
+def _patched_getaddrinfo(host, port, *args, **kwargs):
+    try:
+        return _orig_getaddrinfo(host, port, *args, **kwargs)
+    except socket.gaierror:
+        if not isinstance(host, str):
+            raise
+        ip = _resolve(host)
+        try:
+            port_int = int(port) if port is not None else 0
+        except (TypeError, ValueError):
+            port_int = 0
+        return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", (ip, port_int))]
+
+socket.getaddrinfo = _patched_getaddrinfo
 
 
 # ── мини-обёртка над urllib (вместо requests; работает на Android без certifi) ─
