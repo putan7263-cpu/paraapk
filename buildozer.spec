@@ -77,7 +77,7 @@ android.entrypoint = org.kivy.android.PythonActivity
 
 # Разрешаем cleartext HTTP — нужно для локального backend на 127.0.0.1
 # Без этого Android 9+ блокирует WebView с ERR_CLEARTEXT_NOT_PERMITTED
-android.extra_manifest_application_arguments = android:usesCleartextTraffic="true"
+android.extra_manifest_application_arguments = %(source.dir)s/android_manifest_app_args.xml
 
 
 [buildozer]
