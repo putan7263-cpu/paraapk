@@ -24,8 +24,14 @@ source.exclude_dirs = .venv,.venv39,build,dist,bin,__pycache__,.github
 # (str) Application versioning
 version = 1.0.0
 
-# (list) Application requirements — python-for-android сам подтянет зависимости
-requirements = python3,kivy==2.3.0,requests,certifi,charset-normalizer,idna,urllib3
+# (list) Application requirements — python-for-android сам подтянет зависимости.
+# Python пинаем на 3.11.9 — последний 3.11.x, Kivy 2.3.0 на нём собирается.
+# На 3.14 ломается _PyLong_AsByteArray в Cython-коде Kivy.
+requirements = python3==3.11.9,kivy==2.3.0,requests,certifi,charset-normalizer,idna,urllib3
+
+# Пинаем python-for-android на проверенный стабильный релиз
+p4a.fork = kivy
+p4a.branch = 2024.1.21
 
 # (str) Supported orientation: portrait | landscape | sensor | all
 orientation = portrait
