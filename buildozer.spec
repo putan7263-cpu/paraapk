@@ -51,6 +51,12 @@ android.ndk = 25b
 # (bool) Резервное копирование
 android.allow_backup = False
 
+# Автоматически принимать SDK лицензии (без этого build падает на новой build-tools)
+android.accept_sdk_license = True
+
+# Пинаем стабильную build-tools — иначе buildozer тянет 37 со свежей лицензией
+android.build_tools_version = 34.0.0
+
 # (str) Иконка приложения (1024x1024 PNG рекомендуется)
 icon.filename = %(source.dir)s/web/img/icon.png
 
