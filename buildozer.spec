@@ -75,6 +75,10 @@ android.presplash_color = #06070F
 # Не запрашивать установку как launcher
 android.entrypoint = org.kivy.android.PythonActivity
 
+# Разрешаем cleartext HTTP — нужно для локального backend на 127.0.0.1
+# Без этого Android 9+ блокирует WebView с ERR_CLEARTEXT_NOT_PERMITTED
+android.extra_manifest_application_arguments = android:usesCleartextTraffic="true"
+
 
 [buildozer]
 
