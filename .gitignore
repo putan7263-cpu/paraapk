@@ -1,0 +1,34 @@
+# Виртуальные окружения
+.venv/
+.venv39/
+venv/
+env/
+
+# Python байт-код
+__pycache__/
+*.pyc
+*.pyo
+
+# Сборка
+build/
+dist/
+bin/
+.buildozer/
+
+# IDE
+.vscode/
+.idea/
+.claude/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Логи и временные файлы
+*.log
+server.log
+
+# PyInstaller spec (генерируется автоматически)
+*.spec
+!buildozer.spec

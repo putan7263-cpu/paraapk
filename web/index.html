@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PlayStation Store · Поисковик цен</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <!-- Анимированный фон с градиентами и сетка -->
+  <div class="bg-layer">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="grid"></div>
+  </div>
+
+  <main class="app">
+    <!-- Заголовок -->
+    <header class="header">
+      <div class="header-logo">
+        <svg viewBox="0 0 32 32" class="ps-logo" aria-hidden="true">
+          <path d="M11 4v22.5l4.5-1.4V10.6c0-1 .4-1.7 1.2-1.7.9 0 1.4 1 1.4 2.5v7.5c2.4 1 5 0 5-4.4 0-4.5-2.9-6.4-7.2-7.5L11 4z"
+                fill="url(#g1)" />
+          <path d="M21.7 21.2c1.9-.7 1.7-1.7 1.4-1.8-.5-.2-1.2 0-2.7.5l-3 1V23l3.5-1.2c.3-.1.6-.3.8-.5z"
+                fill="url(#g2)" opacity=".9" />
+          <path d="M8 23.4c-2 .5-3.6.6-4.6.3-1-.3-.8-.9-.2-1.3.7-.4 2-.7 4-1.2l1.2-.3v-2L6.6 19c-2.2.5-4 1.1-5.2 1.9-1.4 1-1.7 2.4 0 3.1 1.4.6 3.6.5 6.6 0V23.4z"
+                fill="url(#g3)" />
+          <defs>
+            <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#4FC3F7" />
+              <stop offset="1" stop-color="#1E88FF" />
+            </linearGradient>
+            <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#B39DDB" />
+              <stop offset="1" stop-color="#7C4DFF" />
+            </linearGradient>
+            <linearGradient id="g3" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#1E88FF" />
+              <stop offset="1" stop-color="#4FC3F7" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="header-text">
+          <h1>PS Store by Slava</h1>
+          <p>Поиск игр и расчёт оптовой цены в рублях</p>
+        </div>
+      </div>
+      <div class="region-pill" id="regionPill">
+        <span class="region-icon">🌍</span>
+        <select id="regionSelect"></select>
+        <svg viewBox="0 0 12 12" class="chev"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+    </header>
+
+    <!-- Поиск -->
+    <section class="card card-search">
+      <div class="card-glow"></div>
+      <div class="card-head">
+        <span class="card-icon">🎮</span>
+        <h2>Название игры</h2>
+      </div>
+      <div class="search-wrap">
+        <svg viewBox="0 0 20 20" class="search-icon"><circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M14 14l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <input id="searchInput" type="text" placeholder="Введите название (от 2 символов)" autocomplete="off" spellcheck="false" />
+        <div class="search-spinner" id="searchSpinner"></div>
+      </div>
+      <ul id="suggestions" class="suggestions" role="listbox"></ul>
+    </section>
+
+    <!-- Ручная цена -->
+    <section class="card card-manual">
+      <div class="card-head">
+        <span class="card-icon">✏️</span>
+        <h2>Ручная цена</h2>
+        <span class="card-hint" id="manualHint">в ₺</span>
+      </div>
+      <div class="manual-wrap">
+        <input id="manualPrice" type="text" inputmode="decimal" placeholder="0" />
+        <span class="manual-sym" id="manualSym">₺</span>
+      </div>
+    </section>
+
+    <!-- Результат -->
+    <section class="card card-result" id="resultCard">
+      <div class="card-glow result-glow"></div>
+      <div class="result-head">
+        <h2 id="gameName" class="game-name">—</h2>
+        <div class="tags">
+          <span id="platformTag" class="tag tag-platform hidden"></span>
+          <span id="langTag" class="tag tag-lang hidden"></span>
+          <span id="subTag" class="tag tag-sub hidden"></span>
+        </div>
+        <div id="trialBadge" class="trial-badge hidden">
+          <span class="trial-dot"></span>ДОСТУПНА ПРОБНАЯ ВЕРСИЯ
+        </div>
+      </div>
+
+      <div class="price-box">
+        <div class="price-box-label">ОПТОВАЯ ЦЕНА</div>
+        <div class="price-main-row">
+          <span id="pricePrefix" class="price-prefix"></span>
+          <span id="priceMain" class="price-main">—</span>
+          <span id="priceBadge" class="price-badge hidden"></span>
+        </div>
+        <div id="priceOld" class="price-old"></div>
+
+        <div id="psPlusRow" class="ps-plus-row hidden">
+          <span class="ps-plus-prefix">PS+</span>
+          <span id="psPlusPrice" class="ps-plus-price"></span>
+          <span id="psPlusBadge" class="ps-plus-badge"></span>
+        </div>
+
+        <div id="subDiscountRow" class="sub-disc-row hidden">
+          <span id="subDiscountLabel" class="sub-disc-prefix"></span>
+          <span id="subDiscountPrice" class="sub-disc-price"></span>
+          <span id="subDiscountBadge" class="sub-disc-badge"></span>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- Диалог коэффициентов -->
+  <div id="bracketsDialog" class="dialog-backdrop hidden">
+    <div class="dialog">
+      <div class="dialog-head">
+        <div>
+          <h3>⚙ Коэффициенты расчёта цены</h3>
+          <p>Итоговая цена = цена × коэффициент + добавка ₽</p>
+        </div>
+        <button class="dialog-close" id="bracketsCloseBtn" aria-label="Закрыть">
+          <svg viewBox="0 0 20 20"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="dialog-region-row">
+        <label>Регион:</label>
+        <select id="bracketsRegion"></select>
+      </div>
+      <div class="brackets-table-wrap">
+        <div class="brackets-head">
+          <span>Мин</span><span>Макс</span><span>Коэффициент</span><span>Добавка ₽</span>
+        </div>
+        <div id="bracketsRows" class="brackets-rows"></div>
+      </div>
+      <div class="dialog-actions">
+        <button class="btn btn-ghost" id="bracketsCancelBtn">Закрыть</button>
+        <button class="btn btn-primary" id="bracketsSaveBtn">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
