@@ -29,9 +29,9 @@ version = 1.0.0
 # На 3.14 ломается _PyLong_AsByteArray в Cython-коде Kivy.
 requirements = python3==3.11.9,kivy==2.3.0,requests,certifi,charset-normalizer,idna,urllib3
 
-# Пинаем python-for-android на проверенный стабильный релиз
+# Пинаем python-for-android на проверенный стабильный релиз (январь 2024)
 p4a.fork = kivy
-p4a.branch = 2024.1.21
+p4a.branch = v2024.01.21
 
 # (str) Supported orientation: portrait | landscape | sensor | all
 orientation = portrait
